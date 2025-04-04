@@ -1,0 +1,91 @@
+---
+title: "thesis"
+author: "BHARATH SHIVADAS KOTIAN"
+date: "2025-03-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Load libraries
+library(tidyverse)
+library(readr)
+library(corrplot)
+library(psych)
+library(cluster)
+
+```
+
+
+```{r}
+# Load the data
+ess <- read_csv("ESS Theme - Personal and social wellbeing.csv")
+
+# View structure
+glimpse(ess)
+
+# Drop columns with more than 50% missing values
+ess_clean <- ess %>% select(where(~ mean(!is.na(.)) > 0.5))
+
+# Check missingness
+sapply(ess_clean, function(x) sum(is.na(x)))
+
+```
+
+```{r}
+# Predict Life is Valuable (dngval) using emotional & social predictors
+model <- lm(dngval ~ stfjb + pstvms + fltanx + fltpcfl + flrms + optftr + nhpftr + pplahlp + trtrsp + wrbknrm, 
+            data = ess_clean)
+summary(model)
+
+```
+
+
+```{r}
+# Average 'Life is Valuable' score per country
+ess_clean %>%
+  group_by(cntry) %>%
+  summarise(Mean_DNGVAL = mean(dngval, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(cntry, -Mean_DNGVAL), y = Mean_DNGVAL)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Average Life Value Score by Country",
+       x = "Country", y = "Mean 'Life is Valuable' Score")
+
+```
+```{r}
+# Relationship between feeling positive (pstvms) and life value (dngval)
+ggplot(ess_clean, aes(x = pstvms, y = dngval)) +
+  geom_jitter(alpha = 0.3) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Positivity vs Life Value",
+       x = "Positive Self-View", y = "Feel Life is Valuable")
+
+```
+```{r}
+# Step 1: Calculate country-level means (already done)
+country_factors <- ess_clean %>%
+  group_by(cntry) %>%
+  summarise(
+    Mean_Life_Valuable = mean(dngval, na.rm = TRUE),
+    Mean_Positivity = mean(pstvms, na.rm = TRUE),
+    Mean_Optimism = mean(optftr, na.rm = TRUE),
+    Mean_Job_Satisfaction = mean(stfjb, na.rm = TRUE),
+    Mean_Resilience = mean(wrbknrm, na.rm = TRUE),
+    Mean_Calmness = mean(fltpcfl, na.rm = TRUE),
+    Mean_Anxiety = mean(fltanx, na.rm = TRUE)
+  )
+
+# Step 2: Rank the countries based on 'Mean_Life_Valuable'
+country_ranking <- country_factors %>%
+  arrange(desc(Mean_Life_Valuable)) %>%
+  mutate(Rank = row_number())
+
+# Step 3: View the ranking
+print(country_ranking)
+
+```
