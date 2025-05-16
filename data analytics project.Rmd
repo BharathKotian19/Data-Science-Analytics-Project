@@ -2,7 +2,9 @@
 title: "thesis"
 author: "BHARATH SHIVADAS KOTIAN"
 date: "2025-03-25"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -36,36 +38,10 @@ sapply(ess_clean, function(x) sum(is.na(x)))
 
 ```
 
-```{r}
-# Predict Life is Valuable (dngval) using emotional & social predictors
-model <- lm(dngval ~ stfjb + pstvms + fltanx + fltpcfl + flrms + optftr + nhpftr + pplahlp + trtrsp + wrbknrm, 
-            data = ess_clean)
-summary(model)
-
-```
 
 
-```{r}
-# Average 'Life is Valuable' score per country
-ess_clean %>%
-  group_by(cntry) %>%
-  summarise(Mean_DNGVAL = mean(dngval, na.rm = TRUE)) %>%
-  ggplot(aes(x = reorder(cntry, -Mean_DNGVAL), y = Mean_DNGVAL)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  coord_flip() +
-  labs(title = "Average Life Value Score by Country",
-       x = "Country", y = "Mean 'Life is Valuable' Score")
 
-```
-```{r}
-# Relationship between feeling positive (pstvms) and life value (dngval)
-ggplot(ess_clean, aes(x = pstvms, y = dngval)) +
-  geom_jitter(alpha = 0.3) +
-  geom_smooth(method = "lm", color = "red") +
-  labs(title = "Positivity vs Life Value",
-       x = "Positive Self-View", y = "Feel Life is Valuable")
 
-```
 ```{r}
 # Step 1: Calculate country-level means (already done)
 country_factors <- ess_clean %>%
@@ -89,3 +65,92 @@ country_ranking <- country_factors %>%
 print(country_ranking)
 
 ```
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+# Load the dataset
+data <- read_csv("ESS6e02_6.csv")
+
+# Clean and transform
+data <- data %>%
+  mutate(
+    gndr = factor(gndr, levels = c(1, 2), labels = c("Male", "Female")),
+    health_group = case_when(
+      health <= 2 ~ "Good",
+      health == 3 ~ "Fair",
+      health >= 4 ~ "Bad",
+      TRUE ~ NA_character_
+    ),
+    age_group = case_when(
+      agea >= 15 & agea <= 29 ~ "15–29",
+      agea >= 30 & agea <= 44 ~ "30–44",
+      agea >= 45 & agea <= 59 ~ "45–59",
+      agea >= 60 ~ "60+",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(gndr))  
+
+
+```
+#### 1. Happiness by Health
+```{r}
+ggplot(data, aes(x = cntry, y = happy, fill = health_group)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(), width = 0.7) +
+  labs(title = "Level of happiness by health", y = "Average Happiness", fill = "Health") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+This plot shows that individuals reporting "Good" health consistently have higher average happiness scores across countries. Happiness tends to decline in those with "Fair" or "Bad" health, emphasizing a strong link between physical well-being and emotional well-being.
+
+#### 2.Life Satisfaction by Gender
+```{r}
+ggplot(data, aes(x = cntry, y = stflife, fill = gndr)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(), width = 0.7) +
+  labs(title = "Level of life satisfaction by gender", y = "Average Life Satisfaction", fill = "Gender") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+In most countries, males and females report similar levels of life satisfaction, with slight differences. In some countries, females report marginally higher satisfaction, suggesting gender gaps are minimal in overall life evaluation.
+
+#### 3.Happiness by Gender
+```{r}
+ggplot(data, aes(x = cntry, y = happy, fill = gndr)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(), width = 0.7) +
+  labs(title = "Level of happiness by gender", y = "Average Happiness", fill = "Gender") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+Average happiness scores by gender show small but noticeable differences in certain countries. Some countries see higher happiness among males, while in others, females report more happiness, indicating culturally variable gender patterns in emotional experience.
+
+
+#### 4.Life Satisfaction by Age Group
+```{r}
+ggplot(data, aes(x = cntry, y = stflife, fill = age_group)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(), width = 0.8) +
+  labs(title = "Level of life satisfaction by age", y = "Average Life Satisfaction", fill = "Age Group") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+Younger individuals (15–29) and those in the 30–44 group generally report higher life satisfaction. Life satisfaction tends to decline slightly in the 45–59 group but may improve slightly again among seniors (60+), suggesting a possible U-shaped pattern.
+

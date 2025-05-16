@@ -1,0 +1,191 @@
+---
+title: "Data Exploration"
+author: "BHARATH SHIVADAS KOTIAN"
+date: "2025-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(showtext)
+```
+
+```{r}
+# Load datasets
+theme_df <- read_csv("ESS Theme - Personal and social wellbeing.csv")
+full_df <- read_csv("ESS6e02_6.csv")
+```
+
+```{r}
+# Drop columns with >50% missing values
+theme_cleaned <- theme_df %>% select(where(~ mean(is.na(.)) <= 0.5))
+full_cleaned <- full_df %>% select(where(~ mean(is.na(.)) <= 0.5))
+```
+
+This code removes all the columns from the data that have too many empty or missing values. It keeps only the columns that have at least half of their data filled in.
+
+```{r}
+# Country code → full name mapping
+country_names <- c(
+  AL = "Albania", AT = "Austria", BE = "Belgium", BG = "Bulgaria", CH = "Switzerland", CY = "Cyprus",
+  CZ = "Czech Republic", DE = "Germany", DK = "Denmark", EE = "Estonia", ES = "Spain",
+  FI = "Finland", FR = "France", GB = "United Kingdom", GR = "Greece", HR = "Croatia",
+  HU = "Hungary", IE = "Ireland", IL = "Israel", IS = "Iceland", IT = "Italy",
+  LT = "Lithuania", LU = "Luxembourg", LV = "Latvia", NL = "Netherlands", NO = "Norway",
+  PL = "Poland", PT = "Portugal", RO = "Romania", RU = "Russia", SE = "Sweden",
+  SI = "Slovenia", SK = "Slovakia", TR = "Turkey", UA = "Ukraine", XK = "Kosovo"
+)
+
+# Step 4: Map full country names
+full_cleaned <- full_cleaned %>%
+  mutate(country = recode(cntry, !!!country_names))
+```
+
+This code changes the short country codes (like "DE" or "FR") into full country names (like "Germany" or "France") so that the data is easier to read and understand. It adds a new column called country to the dataset with these full names.
+
+
+```{r}
+# Clean data uniformly
+cleaned_df <- full_df %>%
+  filter(
+    !is.na(stflife), stflife >= 0, stflife <= 10,
+    !is.na(happy), happy >= 0, happy <= 10,
+    !is.na(cntry)
+  ) %>%
+  mutate(
+    country = recode(cntry, !!!country_names),
+    gender = case_when(gndr == 1 ~ "Male", gndr == 2 ~ "Female", TRUE ~ NA_character_)
+  )
+
+
+```
+
+This code keeps only the rows where the life satisfaction and happiness scores are available and fall between 0 and 10, and the country information is not missing. Then, it adds two new columns: one with full country names and another that changes the gender code into words like "Male" and "Female" to make the data easier to understand.
+
+
+```{r}
+# Average Life Satisfaction by Country
+life_sat_country <- cleaned_df %>%
+  group_by(country) %>%
+  summarise(mean_life_satisfaction = mean(stflife)) %>%
+  arrange(desc(mean_life_satisfaction))
+
+ggplot(life_sat_country, aes(x = reorder(country, -mean_life_satisfaction), y = mean_life_satisfaction)) +
+  geom_col(fill = "#4682B4") +
+  geom_text(aes(label = round(mean_life_satisfaction, 2)), vjust = -0.5, size = 3.5) +
+  labs(title = "Average Life Satisfaction by Country", x = "Country", y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Average Happiness by Country
+happiness_country <- cleaned_df %>%
+  group_by(country) %>%
+  summarise(mean_happiness = mean(happy)) %>%
+  arrange(desc(mean_happiness))
+
+ggplot(happiness_country, aes(x = reorder(country, -mean_happiness), y = mean_happiness)) +
+  geom_col(fill = "#FF69B4") +
+  geom_text(aes(label = round(mean_happiness, 2)), vjust = -0.5, size = 3.5) +
+  labs(title = "Average Happiness by Country", x = "Country", y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+```{r}
+# Life Satisfaction by Gender and Country
+life_by_gender_country <- cleaned_df %>%
+  filter(!is.na(gender)) %>%
+  group_by(country, gender) %>%
+  summarise(mean_life_satisfaction = mean(stflife)) %>%
+  ungroup()
+
+ggplot(life_by_gender_country, aes(x = country, y = mean_life_satisfaction, fill = gender)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = round(mean_life_satisfaction, 2)),
+            position = position_dodge(width = 1), vjust = -0.5, size = 3) +
+  labs(title = "Life Satisfaction by Gender and Country", x = "Country", y = "Score") +
+  scale_fill_manual(values = c("Male" = "#66b3ff", "Female" = "#ff66b3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.title = element_blank())
+
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+```
+
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+comparison_df <- cleaned_df %>%
+  group_by(country) %>%
+  summarise(
+    mean_life_satisfaction = mean(stflife),
+    mean_happiness = mean(happy)
+  ) %>%
+  pivot_longer(cols = c(mean_life_satisfaction, mean_happiness),
+               names_to = "measure", values_to = "score")
+
+
+ggplot(comparison_df, aes(x = reorder(country, -score), y = score, fill = measure)) +
+  geom_col(position = "dodge") +
+  labs(title = "Comparison of Life Satisfaction and Happiness by Country",
+       x = "Country", y = "Average Score") +
+  scale_fill_manual(
+    values = c("mean_life_satisfaction" = "#FF69B4",   # Pink
+               "mean_happiness" = "#4682B4"),          # Blue
+    labels = c("Happiness", "Life Satisfaction")       
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.title = element_blank())
+
+
+
+```
+
+
+```{r}
+library(dplyr)
+
+# Create a table with average scores for each country
+gap_df <- cleaned_df %>%
+  group_by(country) %>%
+  summarise(
+    mean_life_satisfaction = mean(stflife, na.rm = TRUE),
+    mean_happiness = mean(happy, na.rm = TRUE)
+  ) %>%
+  mutate(gap = abs(mean_life_satisfaction - mean_happiness)) %>%  # Absolute difference
+  arrange(desc(gap)) %>%
+  slice(1:5)  # Take top 5
+
+# View result
+print(gap_df)
+
+```
+
+This output shows the top 5 countries where the gap between life satisfaction and happiness is the largest. For example, in Ukraine, the average life satisfaction is 5.05, while happiness is higher at 6.07 — resulting in a gap of 1.02. These gaps highlight where people’s happiness doesn’t match how satisfied they feel about their overall life.
