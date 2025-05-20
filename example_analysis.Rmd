@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Example Analysis - Life Satisfaction"
 output: html_notebook
 ---
 
