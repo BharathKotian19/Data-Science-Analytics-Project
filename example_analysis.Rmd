@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+You could use the `lme4` package, specifically the `lmer()` function to build a hierarchical model. 
+
+## 1. Load Required Libraries
+
+```{r}
+library(lme4)
+#library(lmerTest)  # Optional, for p-values in linear mixed models
+```
+
+
+### 2. Prepare Your Data
+
+Let's consider:
+
+* A dataset that includes variables `life_satisfaction`, `happy`, `age`, `gender`, `education`, and `country`.
+* All Level 1 variables (individual level) are group-mean centered.
+* `country` is a factor variable representing Level 2 units.
+
+```{r}
+# Group-mean centering Level 1 variables (optional but done in the ESS analysis)
+data <- data %>%
+  group_by(cntry) %>%
+  mutate(
+    happy = happy - mean(happy, na.rm = TRUE),
+    age_c = agea - mean(agea, na.rm = TRUE),
+    edu_c = eduyrs - mean(eduyrs, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+
+### 3. Fit the HLM Using `lmer()`
+
+```{r}
+# Fit the multilevel model
+model <- lmer(
+  stflife ~ happy + age_c + gndr + edu_c + (1 | cntry),
+  data = data
+)
+```
+
+* `stflife` = Life satisfaction (DV, 0–10)
+* `gndr` should be coded as a factor (e.g., Male/Female or 0/1)
+* `(1 | cntry)` = Random intercepts for country
+
+To view model output:
+
+```{r}
+summary(model)
+```
+
+
+### 4. Variance Explained
+
+
+To understand how much of the variance lies between countries:
+
+```{r}
+null_model <- lmer(stflife ~ 1 + (1 | cntry), data = data)
+VarCorr(null_model)
+```
+
+Calculate Intraclass Correlation Coefficient ICC:
+
+  - quantifies the proportion of variance explained by the country 
+
+  - The ICC is calculated by dividing the random effect variance by the total variance, i.e. the sum of the random effect variance and the residual variance
+  
+```{r}
+icc <- as.numeric(VarCorr(null_model)$cntry[1]) / (as.numeric(VarCorr(null_model)$cntry[1]) + attr(VarCorr(null_model), "sc")^2)
+icc
+```
+
+
+### Interpretation 
+
+| Predictor       | R Code Equivalent | Interpretation                                                       |
+| --------------- | ----------------- | -------------------------------------------------------------------- |
+| Positive Affect | `happy`    | Strong positive effect on life satisfaction                          |
+| Gender          | `gndr` (factor)   | Females (or whichever level is higher) have higher life satisfaction |
+| Age             | `age_c`           | Not significant here ?                                                |
+| Education       | `edu_c`           | Not significant here ?                                                |
+
+

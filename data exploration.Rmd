@@ -19,8 +19,8 @@ library(showtext)
 
 ```{r}
 # Load datasets
-theme_df <- read_csv("ESS Theme - Personal and social wellbeing.csv")
-full_df <- read_csv("ESS6e02_6.csv")
+theme_df <- read_csv("ESS Theme - Personal and social wellbeing/ESS Theme - Personal and social wellbeing.csv")
+full_df <- read_csv("ESS6/ESS6e02_6.csv")
 ```
 
 ```{r}
@@ -124,14 +124,6 @@ ggplot(life_by_gender_country, aes(x = country, y = mean_life_satisfaction, fill
 
 
 
-```
-
-```{r}
-
-
-```
-
-```{r}
 ```
 
 

@@ -25,7 +25,7 @@ library(cluster)
 
 ```{r}
 # Load the data
-ess <- read_csv("ESS Theme - Personal and social wellbeing.csv")
+ess <- read_csv("ESS Theme - Personal and social wellbeing/ESS Theme - Personal and social wellbeing.csv")
 
 # View structure
 glimpse(ess)
@@ -81,7 +81,7 @@ library(ggplot2)
 library(readr)
 
 # Load the dataset
-data <- read_csv("ESS6e02_6.csv")
+data <- read_csv("ESS6/ESS6e02_6.csv")
 
 # Clean and transform
 data <- data %>%
@@ -105,6 +105,7 @@ data <- data %>%
 
 
 ```
+
 #### 1. Happiness by Health
 ```{r}
 ggplot(data, aes(x = cntry, y = happy, fill = health_group)) +
